@@ -193,6 +193,22 @@
         });
       }
     },
+    getText: function(url, callback){
+      var request = new XMLHttpRequest();
+      request.open('GET', url, true);
+      request.onreadystatechange = function() {
+        if (this.readyState === 4) {
+          var data = this.responseText;
+          if (this.status >= 200 && this.status < 400) {
+            callback(null, data);
+          } else {
+            callback(new Error('request failed'), data);
+          }
+        }
+      };
+      request.send();
+      request = null;
+    },
     getJson: function(url, callback) {
       var request = new XMLHttpRequest();
       request.open('GET', url, true);
@@ -509,7 +525,7 @@
       description = decodeURIComponent(description || '');
       leftValue = decodeURIComponent(leftValue);
       rightValue = decodeURIComponent(rightValue);
-      var urlmatch = /https?:\/\/.*\/([^\/]+\.json)(?:[\?#].*)?/;
+      var urlmatch = /https?:\/\/.*\/([^\/]+\.json|[^\/]+\.txt)(?:[\?#].*)?/;
       var dataLoaded = {
         description: description,
         left: {},
@@ -524,28 +540,58 @@
       if (urlmatch.test(leftValue)) {
         dataLoaded.left.name = urlmatch.exec(leftValue)[1];
         dataLoaded.left.fullname = leftValue;
-        dom.getJson(leftValue, function(error, data) {
-          if (error) {
-            dataLoaded.left.content = error + ((data && data.message) ? data.message : '');
-          } else {
-            dataLoaded.left.content = JSON.stringify(data, null, 2);
-          }
-          loadIfReady();
-        });
+        var extension = dataLoaded.left.name.split(".");
+        extentions = extension[extension.length];
+        if(extension === "json"){
+          dom.getJson(leftValue, function(error, data) {
+            if (error) {
+              dataLoaded.left.content = error + ((data && data.message) ? data.message : '');
+            } else {
+              dataLoaded.left.content = JSON.stringify(data, null, 2);
+            }
+            loadIfReady();
+          });
+        }
+        else{
+          dom.getText(leftValue, function(error, data){
+            console.log("heyo!", data, error)
+            if (error) {
+              dataLoaded.left.content = error + ((data && data.message) ? data.message : '');
+            } else {
+              dataLoaded.left.content = data;
+            }
+            loadIfReady();
+          });
+        }
+       
       } else {
         dataLoaded.left.content = leftValue;
       }
       if (urlmatch.test(rightValue)) {
         dataLoaded.right.name = urlmatch.exec(rightValue)[1];
         dataLoaded.right.fullname = rightValue;
-        dom.getJson(rightValue, function(error, data) {
-          if (error) {
-            dataLoaded.right.content = error + ((data && data.message) ? data.message : '');
-          } else {
-            dataLoaded.right.content = JSON.stringify(data, null, 2);
-          }
-          loadIfReady();
-        });
+        var extension = dataLoaded.left.name.split(".");
+        extentions = extension[extension.length];
+        if(extension === "json"){
+          dom.getJson(rightValue, function(error, data) {
+            if (error) {
+              dataLoaded.right.content = error + ((data && data.message) ? data.message : '');
+            } else {
+              dataLoaded.right.content = JSON.stringify(data, null, 2);
+            }
+            loadIfReady();
+          });
+        }
+        else{
+          dom.getText(rightValue, function(error, data){
+            if (error) {
+              dataLoaded.right.content = error + ((data && data.message) ? data.message : '');
+            } else {
+              dataLoaded.right.content = data;
+            }
+            loadIfReady();
+          });
+        }
       } else {
         dataLoaded.right.content = rightValue;
       }
